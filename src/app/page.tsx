@@ -10,16 +10,20 @@ export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const handleCreateProcedure = (newProcedure: Omit<Procedure, 'id' | 'createdAt' | 'updatedAt' | 'completed'>) => {
+    // Генерируем уникальный ID для процедуры
+    const procedureId = `proc-${Date.now()}`;
+    
     const procedure: Procedure = {
       ...newProcedure,
-      id: `proc-${Date.now()}`,
+      id: procedureId,
       createdAt: new Date(),
       updatedAt: new Date(),
       completed: false,
       steps: newProcedure.steps.map(step => ({
         ...step,
+        // Убеждаемся, что procedureId в шагах соответствует ID процедуры
+        procedureId: procedureId,
         id: `step-${Date.now()}-${step.order}`,
-        procedureId: `proc-${Date.now()}`,
         completed: false
       }))
     };

@@ -2,20 +2,22 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckCircle, Clock, Plus } from "lucide-react";
+import { Calendar, CheckCircle, Clock, Plus, Play } from "lucide-react";
 import { Procedure } from "@/lib/types";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import Link from "next/link";
 
 interface ProcedureCardProps {
   procedure: Procedure;
   onEdit?: () => void;
   onDelete?: () => void;
   onComplete?: () => void;
-  onAddToSchedule?: (procedureId: string) => void; // Новая функция
+  onAddToSchedule?: (procedureId: string) => void;
+  onStart?: () => void; // Новая функция для начала выполнения процедуры
 }
 
-export function ProcedureCard({ procedure, onEdit, onDelete, onComplete, onAddToSchedule }: ProcedureCardProps) {
+export function ProcedureCard({ procedure, onEdit, onDelete, onComplete, onAddToSchedule, onStart }: ProcedureCardProps) {
   const completedSteps = procedure.steps.filter(step => step.completed).length;
   const totalSteps = procedure.steps.length;
   const isCompleted = procedure.completed;
@@ -72,28 +74,33 @@ export function ProcedureCard({ procedure, onEdit, onDelete, onComplete, onAddTo
             </div>
           )}
           
-          <div className="flex justify-between pt-2">
-            <div className="space-x-2">
-              <Button variant="outline" size="sm" onClick={onEdit}>
-                Редактировать
-              </Button>
-              <Button variant="outline" size="sm" onClick={onDelete}>
-                Удалить
-              </Button>
-            </div>
-            <div className="space-x-2">
-              {onAddToSchedule && (
-                <Button variant="outline" size="sm" onClick={() => onAddToSchedule(procedure.id)}>
-                  <Plus className="h-4 w-4" />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={onEdit}>
+              Редактировать
+            </Button>
+            <Button variant="outline" size="sm" onClick={onDelete}>
+              Удалить
+            </Button>
+            {onStart && (
+              <Link href={`/procedure/${procedure.id}`}>
+                <Button size="sm">
+                  <Play className="mr-2 h-4 w-4" />
+                  Начать
                 </Button>
-              )}
-              {!isCompleted && (
-                <Button size="sm" onClick={onComplete}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Завершить
-                </Button>
-              )}
-            </div>
+              </Link>
+            )}
+            {onAddToSchedule && (
+              <Button variant="outline" size="sm" onClick={() => onAddToSchedule(procedure.id)}>
+                <Plus className="mr-2 h-4 w-4" />
+                В расписание
+              </Button>
+            )}
+            {!isCompleted && onComplete && (
+              <Button size="sm" onClick={onComplete}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Завершить
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

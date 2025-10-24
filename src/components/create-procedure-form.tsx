@@ -47,7 +47,7 @@ export function CreateProcedureForm({ onSubmit, onCancel }: CreateProcedureFormP
       steps: steps.map((step, index) => ({
         ...step,
         id: `step-${Date.now()}-${index}`,
-        procedureId: "",
+        procedureId: `proc-${Date.now()}`, // Исправлено: добавлен уникальный ID процедуры
         completed: false,
         order: index
       }))

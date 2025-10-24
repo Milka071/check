@@ -51,7 +51,7 @@ const mockProcedures: Procedure[] = [
 ];
 
 export default function LibraryPage() {
-  const [procedures] = useState<Procedure[]>(mockProcedures);
+  const [procedures, setProcedures] = useState<Procedure[]>(mockProcedures);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -62,9 +62,40 @@ export default function LibraryPage() {
   );
 
   const handleCreateProcedure = (newProcedure: Omit<Procedure, 'id' | 'createdAt' | 'updatedAt' | 'completed'>) => {
-    // В реальной реализации здесь будет логика создания процедуры
-    console.log("Creating procedure:", newProcedure);
+    // Генерируем уникальный ID для процедуры
+    const procedureId = `proc-${Date.now()}`;
+    
+    const procedure: Procedure = {
+      ...newProcedure,
+      id: procedureId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      completed: false,
+      steps: newProcedure.steps.map((step, index) => ({
+        ...step,
+        id: `step-${Date.now()}-${index}`,
+        procedureId: procedureId,
+        completed: false
+      }))
+    };
+    
+    setProcedures([...procedures, procedure]);
     setShowCreateForm(false);
+  };
+
+  const handleDeleteProcedure = (id: string) => {
+    setProcedures(procedures.filter(proc => proc.id !== id));
+  };
+
+  const handleEditProcedure = (id: string) => {
+    // Пока просто выводим в консоль, позже реализуем редактирование
+    console.log("Edit procedure", id);
+  };
+
+  const handleCompleteProcedure = (id: string) => {
+    setProcedures(procedures.map(proc => 
+      proc.id === id ? { ...proc, completed: !proc.completed, updatedAt: new Date() } : proc
+    ));
   };
 
   return (
@@ -123,9 +154,10 @@ export default function LibraryPage() {
                 <ProcedureCard
                   key={procedure.id}
                   procedure={procedure}
-                  onEdit={() => console.log("Edit procedure", procedure.id)}
-                  onDelete={() => console.log("Delete procedure", procedure.id)}
-                  onComplete={() => console.log("Complete procedure", procedure.id)}
+                  onEdit={() => handleEditProcedure(procedure.id)}
+                  onDelete={() => handleDeleteProcedure(procedure.id)}
+                  onComplete={() => handleCompleteProcedure(procedure.id)}
+                  onStart={() => console.log("Start procedure", procedure.id)}
                 />
               ))}
             </div>

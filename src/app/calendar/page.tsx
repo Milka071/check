@@ -1,17 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { ProcedureCard } from "@/components/procedure-card";
 import { Button } from "@/components/ui/button";
-import { Procedure, DailySchedule } from "@/lib/types";
-import { format } from "date-fns";
-import { ru } from "date-fns/locale";
 import { Plus } from "lucide-react";
+import { ScheduleManager } from "@/components/schedule-manager";
 
 // Заглушки для демонстрации
-const mockProcedures: Procedure[] = [
+const mockProcedures = [
   {
     id: "proc-1",
     title: "Утренний ритуал",
@@ -30,10 +25,19 @@ const mockProcedures: Procedure[] = [
     createdAt: new Date(),
     updatedAt: new Date(),
     completed: false
+  },
+  {
+    id: "proc-3",
+    title: "Спортивная тренировка",
+    description: "Ежедневная физическая активность",
+    steps: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    completed: false
   }
 ];
 
-const mockSchedules: DailySchedule[] = [
+const mockSchedules = [
   {
     id: "sched-1",
     date: new Date(new Date().setDate(new Date().getDate() + 1)), // Завтра
@@ -43,27 +47,37 @@ const mockSchedules: DailySchedule[] = [
 ];
 
 export default function CalendarPage() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [procedures] = useState<Procedure[]>(mockProcedures);
-  const [schedules] = useState<DailySchedule[]>(mockSchedules);
+  const [procedures, setProcedures] = useState(mockProcedures);
+  const [schedules, setSchedules] = useState(mockSchedules);
 
-  // Получаем процедуры, запланированные на выбранную дату
-  const scheduledProcedures = date 
-    ? schedules
-        .filter(schedule => 
-          format(new Date(schedule.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-        )
-        .flatMap(schedule => 
-          schedule.procedureIds.map(id => procedures.find(p => p.id === id))
-        )
-        .filter(Boolean) as Procedure[]
-    : [];
+  const handleAddToSchedule = (procedureId, date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const existingSchedule = schedules.find(s => 
+      s.date.toISOString().split('T')[0] === dateStr
+    );
+    
+    if (existingSchedule) {
+      // Если расписание уже существует, добавляем процедуру к нему
+      setSchedules(schedules.map(s => 
+        s.date.toISOString().split('T')[0] === dateStr
+          ? { ...s, procedureIds: [...s.procedureIds, procedureId] }
+          : s
+      ));
+    } else {
+      // Если расписание не существует, создаем новое
+      const newSchedule = {
+        id: `schedule-${Date.now()}`,
+        date: date,
+        procedureIds: [procedureId],
+        userId: "user-1" // Заглушка для userId
+      };
+      setSchedules([...schedules, newSchedule]);
+    }
+  };
 
-  // Получаем ежедневные процедуры
-  const dailyProcedures = procedures.filter(p => p.isDaily);
-
-  // Объединяем запланированные и ежедневные процедуры
-  const allProceduresForDay = [...scheduledProcedures, ...dailyProcedures];
+  const handleRemoveFromSchedule = (scheduleId) => {
+    setSchedules(schedules.filter(s => s.id !== scheduleId));
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -75,72 +89,12 @@ export default function CalendarPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Выберите дату</CardTitle>
-              <CardDescription>
-                Просмотр процедур на выбранную дату
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                initialFocus
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {date 
-                  ? `Процедуры на ${format(date, "d MMMM yyyy", { locale: ru })}` 
-                  : "Выберите дату"}
-              </CardTitle>
-              <CardDescription>
-                {date && `Всего процедур: ${allProceduresForDay.length}`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {date ? (
-                allProceduresForDay.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {allProceduresForDay.map((procedure) => (
-                      <ProcedureCard
-                        key={procedure.id}
-                        procedure={procedure}
-                        onEdit={() => console.log("Edit procedure", procedure.id)}
-                        onDelete={() => console.log("Delete procedure", procedure.id)}
-                        onComplete={() => console.log("Complete procedure", procedure.id)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">
-                      На выбранную дату нет запланированных процедур
-                    </p>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Добавить процедуру
-                    </Button>
-                  </div>
-                )
-              ) : (
-                <p className="text-muted-foreground text-center py-8">
-                  Выберите дату в календаре для просмотра процедур
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <ScheduleManager
+        procedures={procedures}
+        schedules={schedules}
+        onAddToSchedule={handleAddToSchedule}
+        onRemoveFromSchedule={handleRemoveFromSchedule}
+      />
     </div>
   );
 }
