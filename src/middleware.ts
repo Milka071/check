@@ -1,4 +1,4 @@
-import { createServerClient, type CookieRequestConfig } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieRequestConfig) {
+        set(name: string, value: string, options: any) {
           request.cookies.set({
             name,
             value,
@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
             ...options,
           });
         },
-        remove(name: string, options: CookieRequestConfig) {
+        remove(name: string, options: any) {
           request.cookies.set({
             name,
             value: '',
