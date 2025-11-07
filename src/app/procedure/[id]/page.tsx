@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Procedure, ProcedureStep as ProcedureStepType } from "@/lib/types";
-import { Check, ArrowLeft, Play } from "lucide-react";
+import { Check, ArrowLeft, Play, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 // Заглушка для демонстрации
@@ -113,22 +113,39 @@ export default function ProcedureExecutionPage({ params }: { params: { id: strin
         Назад
       </Button>
 
-      <Card className="mb-6">
-        <CardHeader>
+      <Card className="mb-6 shadow-lg border-0 bg-gradient-to-br from-card to-muted">
+        <CardHeader className="text-center">
+          <div className="mx-auto bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
           <CardTitle className="text-2xl">{procedure.title}</CardTitle>
           {procedure.description && (
             <CardDescription>{procedure.description}</CardDescription>
           )}
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Прогресс выполнения</span>
-              <span>{Math.round(progress)}%</span>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Прогресс выполнения</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <Progress value={progress} className="h-3" />
+              <div className="text-sm text-muted-foreground">
+                {completedSteps} из {procedure.steps.length} шагов завершено
+              </div>
             </div>
-            <Progress value={progress} />
-            <div className="text-sm text-muted-foreground">
-              {completedSteps} из {procedure.steps.length} шагов завершено
+            
+            <div className="flex items-center justify-center pt-2">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary">{currentStepIndex + 1}</div>
+                <div className="text-sm text-muted-foreground">Шаг</div>
+              </div>
+              <div className="mx-4 text-muted-foreground">/</div>
+              <div className="text-center">
+                <div className="text-3xl font-bold">{procedure.steps.length}</div>
+                <div className="text-sm text-muted-foreground">Всего</div>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -146,17 +163,18 @@ export default function ProcedureExecutionPage({ params }: { params: { id: strin
             variant="outline"
             onClick={handlePrevStep}
             disabled={currentStepIndex === 0}
+            className="px-6 py-5"
           >
             Назад
           </Button>
           
           {currentStepIndex < procedure.steps.length - 1 ? (
-            <Button onClick={handleNextStep}>
+            <Button onClick={handleNextStep} className="px-6 py-5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
               Далее
               <Play className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleCompleteProcedure}>
+            <Button onClick={handleCompleteProcedure} className="px-6 py-5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
               <Check className="mr-2 h-4 w-4" />
               Завершить процедуру
             </Button>

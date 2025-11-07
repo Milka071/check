@@ -20,6 +20,49 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Supabase Integration
+
+This project supports Supabase for data persistence and authentication. To enable Supabase integration:
+
+1. Create a Supabase project at [https://supabase.com](https://supabase.com)
+2. Copy your Supabase URL and anon key
+3. Create a `.env.local` file in the root directory
+4. Add the following variables to `.env.local`:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+5. Set up the database schema by running the SQL commands from `supabase/schema.sql` in your Supabase SQL editor
+6. Enable email authentication in your Supabase project settings
+
+## Project Structure
+
+```
+src/
+├── app/                 # Next.js app router pages
+├── components/          # React components
+├── contexts/            # React context providers
+├── lib/                 # Utility functions and types
+├── services/            # Business logic services
+└── middleware.ts        # Next.js middleware
+```
+
+## Authentication
+
+The application uses Supabase Auth for user authentication:
+- Users can sign up with email and password
+- Users can log in with existing credentials
+- Protected routes require authentication
+- User data is automatically associated with the authenticated user
+
+## Data Models
+
+The application uses three main data models:
+
+1. **Procedures** - Main procedure entities with metadata
+2. **Procedure Steps** - Individual steps within a procedure
+3. **Daily Schedules** - Scheduling of procedures for specific dates
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

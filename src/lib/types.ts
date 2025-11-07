@@ -1,5 +1,6 @@
 export interface Procedure {
   id: string;
+  user_id?: string; // Для интеграции с Supabase
   title: string;
   description: string;
   steps: ProcedureStep[];

@@ -35,29 +35,29 @@ export function DailyProcedures({
 
   // Получаем процедуры, запланированные на текущую дату
   const scheduledProcedures = schedules
-    .filter(schedule => 
+    .filter((schedule: DailySchedule) => 
       format(new Date(schedule.date), 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd')
     )
-    .flatMap(schedule => 
-      schedule.procedureIds.map(id => procedures.find(p => p.id === id))
+    .flatMap((schedule: DailySchedule) => 
+      schedule.procedureIds.map((id: string) => procedures.find((p: Procedure) => p.id === id))
     )
     .filter(Boolean) as Procedure[];
 
   // Получаем ежедневные процедуры
-  const dailyProcedures = procedures.filter(p => p.isDaily);
+  const dailyProcedures = procedures.filter((p: Procedure) => p.isDaily);
 
   // Объединяем запланированные и ежедневные процедуры
   const allProceduresForDay = [...scheduledProcedures, ...dailyProcedures];
 
   // Получаем процедуры, которые еще не добавлены в расписание на текущий день
-  const availableProcedures = procedures.filter(procedure => {
+  const availableProcedures = procedures.filter((procedure: Procedure) => {
     // Исключаем ежедневные процедуры, так как они всегда отображаются
     if (procedure.isDaily) return false;
     
     // Проверяем, добавлена ли процедура в расписание на текущий день
-    const isScheduled = scheduledProcedures.some(p => p.id === procedure.id);
+    const isScheduled = scheduledProcedures.some((p: Procedure) => p && p.id === procedure.id);
     return !isScheduled;
-  });
+  }).filter(Boolean) as Procedure[];
 
   return (
     <div className="space-y-6">
@@ -70,11 +70,15 @@ export function DailyProcedures({
             variant="outline" 
             size="icon" 
             onClick={() => setShowCalendar(!showCalendar)}
+            className="rounded-full"
           >
             <CalendarIcon className="h-4 w-4" />
           </Button>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
+        <Button 
+          onClick={() => setShowCreateForm(true)}
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Добавить процедуру
         </Button>
@@ -86,7 +90,7 @@ export function DailyProcedures({
             <Calendar
               mode="single"
               selected={currentDate}
-              onSelect={(date) => {
+              onSelect={(date: Date | undefined) => {
                 if (date) {
                   onDateChange(date);
                   setShowCalendar(false);
@@ -100,13 +104,16 @@ export function DailyProcedures({
 
       {showCreateForm ? (
         <CreateProcedureForm 
-          onSubmit={onCreateProcedure}
+          onSubmit={(procedure) => {
+            onCreateProcedure(procedure);
+            setShowCreateForm(false);
+          }}
           onCancel={() => setShowCreateForm(false)}
         />
       ) : (
         <div className="space-y-6">
           {allProceduresForDay.length === 0 ? (
-            <Card>
+            <Card className="border-2 border-dashed border-muted-foreground/20">
               <CardHeader>
                 <CardTitle>Нет процедур на этот день</CardTitle>
                 <CardDescription>
@@ -114,22 +121,29 @@ export function DailyProcedures({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => setShowCreateForm(true)}>
+                <Button 
+                  onClick={() => setShowCreateForm(true)}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                >
                   Создать процедуру
                 </Button>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {allProceduresForDay.map((procedure) => (
-                <ProcedureCard
-                  key={procedure.id}
-                  procedure={procedure}
-                  onEdit={() => console.log("Edit procedure", procedure.id)}
-                  onDelete={() => console.log("Delete procedure", procedure.id)}
-                  onComplete={() => console.log("Complete procedure", procedure.id)}
-                  onAddToSchedule={(procedureId) => onAddToSchedule(procedureId, currentDate)}
-                />
+              {allProceduresForDay.map((procedure: Procedure) => (
+                procedure ? (
+                  <div key={procedure.id}>
+                    <ProcedureCard
+                      procedure={procedure}
+                      onEdit={() => console.log("Edit procedure", procedure.id)}
+                      onDelete={() => console.log("Delete procedure", procedure.id)}
+                      onComplete={() => console.log("Complete procedure", procedure.id)}
+                      onAddToSchedule={(procedureId: string) => onAddToSchedule(procedureId, currentDate)}
+                      onStart={() => console.log("Start procedure", procedure.id)}
+                    />
+                  </div>
+                ) : null
               ))}
             </div>
           )}
@@ -139,8 +153,8 @@ export function DailyProcedures({
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Доступные процедуры</h3>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {availableProcedures.map((procedure) => (
-                  <Card key={procedure.id} className="border-dashed">
+                {availableProcedures.map((procedure: Procedure) => (
+                  <Card key={procedure.id} className="border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 transition-colors">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base">{procedure.title}</CardTitle>
                     </CardHeader>
