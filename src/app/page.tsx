@@ -10,16 +10,13 @@ export default function Home() {
   const [procedures, setProcedures] = useState<Procedure[]>([]);
   const [schedules, setSchedules] = useState<DailySchedule[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [loading, setLoading] = useState(true);
-  const { session, user } = useSupabase();
+  const [dataLoading, setDataLoading] = useState(false);
+  const { session, user, loading } = useSupabase();
 
   // Load data from Supabase
   useEffect(() => {
     if (user) {
       loadData();
-    } else if (user === null && !loading) {
-      // User is not authenticated, but we're done loading
-      setLoading(false);
     }
   }, [user]);
 
@@ -27,7 +24,7 @@ export default function Home() {
     if (!user) return;
     
     try {
-      setLoading(true);
+      setDataLoading(true);
       const [loadedProcedures, loadedSchedules] = await Promise.all([
         ProcedureService.getProcedures(user.id),
         ProcedureService.getSchedules(user.id)
@@ -40,7 +37,7 @@ export default function Home() {
       // Fallback to localStorage
       loadFromLocalStorage();
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
@@ -230,7 +227,7 @@ export default function Home() {
     }
   };
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="container mx-auto py-8">
         <div className="flex justify-center items-center h-64">
