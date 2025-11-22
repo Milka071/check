@@ -2,9 +2,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Procedure } from "@/lib/types";
 
-export function ProcedureProgress(props) {
-  const { procedure } = props;
+interface ProcedureProgressProps {
+  procedure: Procedure;
+}
+
+export function ProcedureProgress({ procedure }: ProcedureProgressProps) {
   const completedSteps = procedure.steps.filter((step) => step.completed).length;
   const totalSteps = procedure.steps.length;
   const progress = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;

@@ -44,5 +44,5 @@ export interface DailySchedule {
   id: string;
   date: Date;
   procedureIds: string[]; // Ссылки на процедуры, запланированные на этот день
-  userId: string;
+  user_id: string;
 }

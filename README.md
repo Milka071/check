@@ -1,79 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 Библиотека Личных Процедур
 
-## Getting Started
+Веб-платформа для создания, хранения и выполнения персональных чек-листов и многошаговых процедур с календарной функциональностью и системой напоминаний.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Supabase](https://img.shields.io/badge/Supabase-green)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8)
+
+## ✨ Возможности
+
+- 📝 **Создание процедур** - многошаговые чек-листы с описаниями
+- 📅 **Календарь** - планирование процедур на любую дату
+- 🔄 **Ежедневные процедуры** - автоматическое отображение каждый день
+- ✅ **Отслеживание выполнения** - прогресс по датам
+- 🔔 **Напоминания** - настраиваемые уведомления
+- 🌓 **Темная тема** - светлая и темная темы
+- 📱 **Адаптивный дизайн** - работает на всех устройствах
+- 🔐 **Аутентификация** - безопасный вход через Supabase
+
+## 🚀 Технологии
+
+- **Frontend**: Next.js 15, TypeScript, React 19
+- **Стили**: Tailwind CSS 4
+- **UI**: shadcn/ui компоненты
+- **Backend**: Supabase (PostgreSQL, Auth, RLS)
+- **Деплой**: Vercel
+- **Пакетный менеджер**: pnpm
+
+## 📦 Установка
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Клонировать репозиторий
+git clone <repository-url>
+cd check
+
+# Установить зависимости
+pnpm install
+
+# Создать .env.local файл и добавить переменные Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Запустить dev сервер
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000) в браузере.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🗄️ База данных
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Проект использует следующие таблицы в Supabase:
 
-## Supabase Integration
+- `procedures` - процедуры пользователей
+- `procedure_steps` - шаги процедур
+- `daily_schedules` - расписание процедур
+- `procedure_completions` - отслеживание выполнения по датам
+- `reminders` - настройки напоминаний
 
-This project supports Supabase for data persistence and authentication. To enable Supabase integration:
+Все таблицы защищены Row Level Security (RLS) политиками.
 
-1. Create a Supabase project at [https://supabase.com](https://supabase.com)
-2. Copy your Supabase URL and anon key
-3. Create a `.env.local` file in the root directory
-4. Add the following variables to `.env.local`:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-5. Set up the database schema by running the SQL commands from `supabase/schema.sql` in your Supabase SQL editor
-6. Enable email authentication in your Supabase project settings
+## 🎯 Основные функции
 
-## Project Structure
+### Создание процедуры
+1. Нажмите "Добавить процедуру"
+2. Введите название и описание
+3. Добавьте шаги (автоматически создаются при заполнении)
+4. Выберите тип: разовая или ежедневная
 
+### Планирование
+1. Откройте календарь
+2. Выберите дату
+3. Добавьте процедуру в расписание
+
+### Выполнение
+1. Нажмите "Начать" на процедуре
+2. Проходите шаги последовательно
+3. Нажимайте "Далее" для автоматической отметки выполнения
+
+### Напоминания
+1. Перейдите в Настройки
+2. Включите браузерные уведомления
+3. Настройте время и дни недели
+
+## 🚀 Деплой
+
+Подробная инструкция по деплою на Vercel находится в [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## 📝 Разработка
+
+```bash
+# Запустить dev сервер
+pnpm dev
+
+# Собрать для production
+pnpm build
+
+# Запустить production сборку
+pnpm start
 ```
-src/
-├── app/                 # Next.js app router pages
-├── components/          # React components
-├── contexts/            # React context providers
-├── lib/                 # Utility functions and types
-├── services/            # Business logic services
-└── middleware.ts        # Next.js middleware
-```
 
-## Authentication
+## 📄 Документация
 
-The application uses Supabase Auth for user authentication:
-- Users can sign up with email and password
-- Users can log in with existing credentials
-- Protected routes require authentication
-- User data is automatically associated with the authenticated user
+- [План разработки](./docs/development_plan.md) - детальный план разработки проекта
+- [Инструкция по деплою](./DEPLOYMENT.md) - как задеплоить на Vercel
 
-## Data Models
+## 🔗 Полезные ссылки
 
-The application uses three main data models:
-
-1. **Procedures** - Main procedure entities with metadata
-2. **Procedure Steps** - Individual steps within a procedure
-3. **Daily Schedules** - Scheduling of procedures for specific dates
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [shadcn/ui](https://ui.shadcn.com)

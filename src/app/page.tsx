@@ -100,7 +100,7 @@ export default function Home() {
       const procedure: Procedure = {
         ...newProcedure,
         id: procedureId,
-        userId: user?.id || "user-1",
+        user_id: user?.id || "user-1",
         createdAt: new Date(),
         updatedAt: new Date(),
         completed: false,
@@ -145,7 +145,7 @@ export default function Home() {
         // Create new schedule
         const newSchedule: DailySchedule = {
           id: `schedule-${Date.now()}`,
-          userId: user.id,
+          user_id: user.id,
           date: date,
           procedureIds: [procedureId]
         };
@@ -167,7 +167,7 @@ export default function Home() {
       } else {
         const newSchedule: DailySchedule = {
           id: `schedule-${Date.now()}`,
-          userId: user?.id || "user-1",
+          user_id: user?.id || "user-1",
           date: date,
           procedureIds: [procedureId]
         };
@@ -227,9 +227,52 @@ export default function Home() {
     }
   };
 
+  const handleUpdateProcedure = async (updatedProcedure: Procedure) => {
+    if (!user) {
+      console.error("User not authenticated");
+      return;
+    }
+    
+    try {
+      await ProcedureService.updateProcedure(updatedProcedure);
+      setProcedures(procedures.map(p => p.id === updatedProcedure.id ? updatedProcedure : p));
+    } catch (error) {
+      console.error("Error updating procedure:", error);
+      // Fallback to localStorage
+      const newProcedures = procedures.map(p => p.id === updatedProcedure.id ? updatedProcedure : p);
+      setProcedures(newProcedures);
+      localStorage.setItem('procedures', JSON.stringify(newProcedures));
+    }
+  };
+
+  const handleDeleteProcedure = async (procedureId: string) => {
+    if (!user) {
+      console.error("User not authenticated");
+      return;
+    }
+    
+    try {
+      await ProcedureService.deleteProcedure(procedureId);
+      setProcedures(procedures.filter(p => p.id !== procedureId));
+      
+      // Remove from schedules
+      const newSchedules = schedules.map(s => ({
+        ...s,
+        procedureIds: s.procedureIds.filter(id => id !== procedureId)
+      })).filter(s => s.procedureIds.length > 0);
+      setSchedules(newSchedules);
+    } catch (error) {
+      console.error("Error deleting procedure:", error);
+      // Fallback to localStorage
+      const newProcedures = procedures.filter(p => p.id !== procedureId);
+      setProcedures(newProcedures);
+      localStorage.setItem('procedures', JSON.stringify(newProcedures));
+    }
+  };
+
   if (loading || dataLoading) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="max-w-5xl mx-auto py-8 px-4">
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
@@ -239,7 +282,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="max-w-5xl mx-auto py-8 px-4">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Добро пожаловать в Библиотеку Личных Процедур</h1>
           <p className="mb-6">Пожалуйста, войдите в систему, чтобы начать использовать приложение</p>
@@ -252,7 +295,7 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="max-w-5xl mx-auto py-8 px-4">
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           Библиотека Личных Процедур
@@ -267,6 +310,8 @@ export default function Home() {
         currentDate={currentDate}
         onDateChange={setCurrentDate}
         onCreateProcedure={handleCreateProcedure}
+        onUpdateProcedure={handleUpdateProcedure}
+        onDeleteProcedure={handleDeleteProcedure}
         onAddToSchedule={handleAddToSchedule}
         onRemoveFromSchedule={handleRemoveFromSchedule}
       />

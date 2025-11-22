@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useSupabase } from "@/contexts/SupabaseContext";
 import { Home, Calendar, Library, Settings, Sparkles, LogOut, LogIn } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -58,6 +59,7 @@ export function Navbar() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <ThemeToggle />
             {session ? (
               <>
                 <span className="text-sm text-muted-foreground hidden sm:inline">

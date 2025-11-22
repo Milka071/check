@@ -2,9 +2,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Procedure } from "@/lib/types";
 
-export function ProcedureStatistics(props) {
-  const { procedures } = props;
+interface ProcedureStatisticsProps {
+  procedures: Procedure[];
+}
+
+export function ProcedureStatistics({ procedures }: ProcedureStatisticsProps) {
   // Рассчитываем статистику
   const totalProcedures = procedures.length;
   const completedProcedures = procedures.filter((p) => p.completed).length;

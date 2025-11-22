@@ -14,10 +14,11 @@ interface ProcedureCardProps {
   onDelete?: () => void;
   onComplete?: () => void;
   onAddToSchedule?: (procedureId: string) => void;
-  onStart?: () => void; // Новая функция для начала выполнения процедуры
+  onStart?: () => void;
+  onToggleDaily?: (procedure: Procedure) => void;
 }
 
-export function ProcedureCard({ procedure, onEdit, onDelete, onComplete, onAddToSchedule, onStart }: ProcedureCardProps) {
+export function ProcedureCard({ procedure, onEdit, onDelete, onComplete, onAddToSchedule, onStart, onToggleDaily }: ProcedureCardProps) {
   const completedSteps = procedure.steps.filter((step: any) => step.completed).length;
   const totalSteps = procedure.steps.length;
   const isCompleted = procedure.completed;
@@ -33,13 +34,22 @@ export function ProcedureCard({ procedure, onEdit, onDelete, onComplete, onAddTo
               <CardDescription className="mt-1 line-clamp-2">{procedure.description}</CardDescription>
             )}
           </div>
-          <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-            isCompleted 
-              ? "border-transparent bg-primary text-primary-foreground" 
-              : procedure.isDaily ? "border-transparent bg-secondary text-secondary-foreground" : "border-transparent bg-accent text-accent-foreground"
-          }`}>
-            {isCompleted ? "Завершено" : procedure.isDaily ? "Ежедневно" : "Активно"}
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onToggleDaily && !isCompleted) {
+                onToggleDaily({ ...procedure, isDaily: !procedure.isDaily });
+              }
+            }}
+            disabled={isCompleted}
+            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+              isCompleted 
+                ? "border-transparent bg-primary text-primary-foreground cursor-default" 
+                : "cursor-pointer hover:opacity-80 " + (procedure.isDaily ? "border-transparent bg-secondary text-secondary-foreground" : "border-transparent bg-accent text-accent-foreground")
+            }`}
+          >
+            {isCompleted ? "Завершено" : procedure.isDaily ? "Ежедневно" : "Разовая"}
+          </button>
         </div>
       </CardHeader>
       <CardContent>

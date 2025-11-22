@@ -93,3 +93,39 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
+
+/* Calendar fix */
+.rdp {
+  --rdp-cell-size: 40px;
+}
+
+.rdp-months {
+  display: flex;
+  flex-direction: column;
+}
+
+.rdp-month {
+  width: 100%;
+}
+
+.rdp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rdp-head_row,
+.rdp-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.rdp-head_cell,
+.rdp-cell {
+  text-align: center;
+}
+
+.rdp-day {
+  width: 100%;
+  height: var(--rdp-cell-size);
+}

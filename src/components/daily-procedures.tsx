@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { SimpleCalendar } from "@/components/simple-calendar";
 import { ProcedureCard } from "@/components/procedure-card";
 import { CreateProcedureForm } from "@/components/create-procedure-form";
 import { Procedure, DailySchedule } from "@/lib/types";
 import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useSupabase } from "@/contexts/SupabaseContext";
+import { ProcedureService } from "@/services/procedureService";
+import { useEffect } from "react";
 
 interface DailyProceduresProps {
   procedures: Procedure[];
@@ -17,6 +20,8 @@ interface DailyProceduresProps {
   currentDate: Date;
   onDateChange: (date: Date) => void;
   onCreateProcedure: (procedure: Omit<Procedure, 'id' | 'createdAt' | 'updatedAt' | 'completed'>) => void;
+  onUpdateProcedure: (procedure: Procedure) => void;
+  onDeleteProcedure: (procedureId: string) => void;
   onAddToSchedule: (procedureId: string, date: Date) => void;
   onRemoveFromSchedule: (procedureId: string, date: Date) => void;
 }
@@ -27,11 +32,16 @@ export function DailyProcedures({
   currentDate,
   onDateChange,
   onCreateProcedure,
+  onUpdateProcedure,
+  onDeleteProcedure,
   onAddToSchedule,
   onRemoveFromSchedule
 }: DailyProceduresProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [editingProcedure, setEditingProcedure] = useState<Procedure | null>(null);
+  const [completions, setCompletions] = useState<Map<string, any>>(new Map());
+  const { user } = useSupabase();
 
   // Получаем процедуры, запланированные на текущую дату
   const scheduledProcedures = schedules
@@ -46,8 +56,30 @@ export function DailyProcedures({
   // Получаем ежедневные процедуры
   const dailyProcedures = procedures.filter((p: Procedure) => p.isDaily);
 
-  // Объединяем запланированные и ежедневные процедуры
-  const allProceduresForDay = [...scheduledProcedures, ...dailyProcedures];
+  // Объединяем запланированные и ежедневные процедуры, убираем дубликаты
+  const allProceduresForDay = Array.from(
+    new Map([...scheduledProcedures, ...dailyProcedures].map(p => [p.id, p])).values()
+  );
+
+  // Загружаем статусы выполнения для текущей даты
+  useEffect(() => {
+    if (user) {
+      loadCompletions();
+    }
+  }, [currentDate, user]);
+
+  const loadCompletions = async () => {
+    if (!user) return;
+    const completionsMap = await ProcedureService.getCompletionsForDate(user.id, currentDate);
+    setCompletions(completionsMap);
+  };
+
+  const handleToggleCompletion = async (procedureId: string, completed: boolean) => {
+    if (!user) return;
+    
+    await ProcedureService.updateProcedureCompletion(user.id, procedureId, currentDate, completed);
+    await loadCompletions();
+  };
 
   // Получаем процедуры, которые еще не добавлены в расписание на текущий день
   const availableProcedures = procedures.filter((procedure: Procedure) => {
@@ -87,28 +119,36 @@ export function DailyProcedures({
       {showCalendar && (
         <Card className="mb-6">
           <CardContent className="p-4">
-            <Calendar
-              mode="single"
+            <SimpleCalendar
               selected={currentDate}
-              onSelect={(date: Date | undefined) => {
-                if (date) {
-                  onDateChange(date);
-                  setShowCalendar(false);
-                }
+              onSelect={(date: Date) => {
+                onDateChange(date);
+                setShowCalendar(false);
               }}
-              initialFocus
             />
           </CardContent>
         </Card>
       )}
 
-      {showCreateForm ? (
+      {showCreateForm || editingProcedure ? (
         <CreateProcedureForm 
           onSubmit={(procedure) => {
-            onCreateProcedure(procedure);
-            setShowCreateForm(false);
+            if (editingProcedure) {
+              onUpdateProcedure({
+                ...editingProcedure,
+                ...procedure
+              });
+              setEditingProcedure(null);
+            } else {
+              onCreateProcedure(procedure);
+              setShowCreateForm(false);
+            }
           }}
-          onCancel={() => setShowCreateForm(false)}
+          onCancel={() => {
+            setShowCreateForm(false);
+            setEditingProcedure(null);
+          }}
+          initialData={editingProcedure || undefined}
         />
       ) : (
         <div className="space-y-6">
@@ -131,20 +171,36 @@ export function DailyProcedures({
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {allProceduresForDay.map((procedure: Procedure) => (
-                procedure ? (
+              {allProceduresForDay.map((procedure: Procedure) => {
+                // Получаем статус выполнения для текущей даты
+                const completion = completions.get(procedure.id);
+                const displayProcedure = {
+                  ...procedure,
+                  completed: completion?.completed || false,
+                  steps: procedure.steps.map(step => ({
+                    ...step,
+                    completed: completion?.completed_steps?.includes(step.id) || false
+                  }))
+                };
+                
+                return procedure ? (
                   <div key={procedure.id}>
                     <ProcedureCard
-                      procedure={procedure}
-                      onEdit={() => console.log("Edit procedure", procedure.id)}
-                      onDelete={() => console.log("Delete procedure", procedure.id)}
-                      onComplete={() => console.log("Complete procedure", procedure.id)}
+                      procedure={displayProcedure}
+                      onEdit={() => setEditingProcedure(procedure)}
+                      onDelete={() => {
+                        if (confirm(`Удалить процедуру "${procedure.title}"?`)) {
+                          onDeleteProcedure(procedure.id);
+                        }
+                      }}
+                      onComplete={() => handleToggleCompletion(procedure.id, true)}
+                      onToggleDaily={(updatedProcedure) => onUpdateProcedure(updatedProcedure)}
                       onAddToSchedule={(procedureId: string) => onAddToSchedule(procedureId, currentDate)}
                       onStart={() => console.log("Start procedure", procedure.id)}
                     />
                   </div>
-                ) : null
-              ))}
+                ) : null;
+              })}
             </div>
           )}
 

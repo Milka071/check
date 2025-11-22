@@ -6,13 +6,17 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ReminderSettings } from "@/components/reminder-settings";
 
 export default function SettingsPage() {
   return (
-    <div className="container mx-auto py-8">
+    <div className="max-w-5xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Настройки</h1>
       
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="space-y-6">
+        <ReminderSettings />
+        
+        <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Уведомления</CardTitle>
@@ -128,6 +132,7 @@ export default function SettingsPage() {
             <Button>Сохранить изменения</Button>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

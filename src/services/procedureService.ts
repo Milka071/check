@@ -2,6 +2,77 @@ import { supabase } from "@/lib/supabaseClient";
 import { Procedure, ProcedureStep, DailySchedule } from "@/lib/types";
 
 export class ProcedureService {
+  // Получить статус выполнения процедуры на конкретную дату
+  static async getProcedureCompletion(userId: string, procedureId: string, date: Date): Promise<any> {
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('procedure_completions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('procedure_id', procedureId)
+      .eq('date', dateStr)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+      console.error('Error fetching completion:', error);
+    }
+
+    return data;
+  }
+
+  // Обновить статус выполнения процедуры на конкретную дату
+  static async updateProcedureCompletion(
+    userId: string, 
+    procedureId: string, 
+    date: Date, 
+    completed: boolean,
+    completedSteps: string[] = []
+  ): Promise<void> {
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const { error } = await supabase
+      .from('procedure_completions')
+      .upsert({
+        user_id: userId,
+        procedure_id: procedureId,
+        date: dateStr,
+        completed,
+        completed_steps: completedSteps,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,procedure_id,date'
+      });
+
+    if (error) {
+      throw new Error(`Error updating completion: ${error.message}`);
+    }
+  }
+
+  // Получить все выполнения процедур на конкретную дату
+  static async getCompletionsForDate(userId: string, date: Date): Promise<Map<string, any>> {
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('procedure_completions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', dateStr);
+
+    if (error) {
+      console.error('Error fetching completions:', error);
+      return new Map();
+    }
+
+    const completionsMap = new Map();
+    (data || []).forEach(completion => {
+      completionsMap.set(completion.procedure_id, completion);
+    });
+
+    return completionsMap;
+  }
+
+
   static async getProcedures(userId: string): Promise<Procedure[]> {
     // Get procedures
     const { data: proceduresData, error: proceduresError } = await supabase
@@ -20,7 +91,7 @@ export class ProcedureService {
       .from('procedure_steps')
       .select('*')
       .in('procedure_id', procedureIds)
-      .order('procedure_id', 'order');
+      .order('order', { ascending: true });
 
     if (stepsError) {
       throw new Error(`Error loading steps: ${stepsError.message}`);
@@ -43,7 +114,7 @@ export class ProcedureService {
 
       return {
         id: proc.id,
-        userId: proc.user_id,
+        user_id: proc.user_id,
         title: proc.title,
         description: proc.description || "",
         steps: procedureSteps,
@@ -59,13 +130,10 @@ export class ProcedureService {
   }
 
   static async createProcedure(procedure: Omit<Procedure, 'id' | 'createdAt' | 'updatedAt'>, userId: string): Promise<Procedure> {
-    const procedureId = `proc-${Date.now()}`;
-    
-    // Insert the procedure
+    // Insert the procedure (let Supabase generate UUID)
     const { data: procedureData, error: procedureError } = await supabase
       .from('procedures')
       .insert([{
-        id: procedureId,
         user_id: userId,
         title: procedure.title,
         description: procedure.description,
@@ -81,10 +149,11 @@ export class ProcedureService {
       throw new Error(`Error creating procedure: ${procedureError.message}`);
     }
 
+    const procedureId = procedureData.id;
+
     // Insert the steps
     if (procedure.steps.length > 0) {
-      const stepsToInsert = procedure.steps.map((step, index) => ({
-        id: `step-${Date.now()}-${index}`,
+      const stepsToInsert = procedure.steps.map((step) => ({
         procedure_id: procedureId,
         title: step.title,
         description: step.description,
@@ -94,29 +163,49 @@ export class ProcedureService {
         timer: step.timer || null
       }));
 
-      const { error: stepsError } = await supabase
+      const { data: stepsData, error: stepsError } = await supabase
         .from('procedure_steps')
-        .insert(stepsToInsert);
+        .insert(stepsToInsert)
+        .select();
 
       if (stepsError) {
         throw new Error(`Error creating procedure steps: ${stepsError.message}`);
       }
+
+      // Return the complete procedure with steps
+      const createdProcedure: Procedure = {
+        id: procedureId,
+        user_id: userId,
+        title: procedure.title,
+        description: procedure.description,
+        steps: (stepsData || []).map(step => ({
+          id: step.id,
+          procedureId: procedureId,
+          title: step.title,
+          description: step.description || "",
+          order: step.order,
+          completed: step.completed || false,
+          mediaUrl: step.media_url || undefined,
+          timer: step.timer || undefined
+        })),
+        createdAt: new Date(procedureData.created_at),
+        updatedAt: new Date(procedureData.updated_at),
+        completed: procedure.completed || false,
+        isDaily: procedure.isDaily || false
+      };
+
+      return createdProcedure;
     }
 
-    // Return the complete procedure with steps
+    // Return procedure without steps
     const createdProcedure: Procedure = {
       id: procedureId,
-      userId: userId,
+      user_id: userId,
       title: procedure.title,
       description: procedure.description,
-      steps: procedure.steps.map((step, index) => ({
-        ...step,
-        id: `step-${Date.now()}-${index}`,
-        procedureId: procedureId,
-        completed: step.completed || false
-      })),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      steps: [],
+      createdAt: new Date(procedureData.created_at),
+      updatedAt: new Date(procedureData.updated_at),
       completed: procedure.completed || false,
       isDaily: procedure.isDaily || false
     };
@@ -145,12 +234,11 @@ export class ProcedureService {
 
     // Update or insert steps
     for (const step of procedure.steps) {
-      if (step.id.startsWith('step-')) {
-        // New step, insert it
+      if (!step.id || step.id.startsWith('temp-')) {
+        // New step, insert it (let Supabase generate UUID)
         const { error: insertError } = await supabase
           .from('procedure_steps')
           .insert([{
-            id: step.id,
             procedure_id: procedure.id,
             title: step.title,
             description: step.description,
@@ -210,7 +298,7 @@ export class ProcedureService {
 
     const schedules = (schedulesData || []).map(schedule => ({
       id: schedule.id,
-      userId: schedule.user_id,
+      user_id: schedule.user_id,
       date: new Date(schedule.date),
       procedureIds: schedule.procedure_ids || []
     }));
@@ -219,12 +307,9 @@ export class ProcedureService {
   }
 
   static async createSchedule(schedule: Omit<DailySchedule, 'id'>, userId: string): Promise<DailySchedule> {
-    const scheduleId = `schedule-${Date.now()}`;
-    
     const { data, error } = await supabase
       .from('daily_schedules')
       .insert([{
-        id: scheduleId,
         user_id: userId,
         date: schedule.date.toISOString().split('T')[0],
         procedure_ids: schedule.procedureIds
@@ -237,8 +322,8 @@ export class ProcedureService {
     }
 
     const createdSchedule: DailySchedule = {
-      id: scheduleId,
-      userId: userId,
+      id: data.id,
+      user_id: userId,
       date: new Date(data.date),
       procedureIds: data.procedure_ids || []
     };
